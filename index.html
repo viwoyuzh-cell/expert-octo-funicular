@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gas Monitoring System</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      transition: 0.5s;
+    }
+
+    h1 {
+      margin-top: 20px;
+    }
+
+    .box {
+      font-size: 20px;
+      margin: 10px;
+    }
+
+    #status {
+      font-size: 30px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>GAS MONITORING SYSTEM</h1>
+
+<div id="status">Loading...</div>
+
+<div class="box" id="s1"></div>
+<div class="box" id="s2"></div>
+<div class="box" id="s3"></div>
+
+<audio id="warn" src="warning.mp3"></audio>
+<audio id="danger" src="danger.mp3"></audio>
+
+<script>
+
+const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQfZFMd4IOZupSSIwYXzV8_pfvW-yy-cBcSjnr5qJ8c91g6wC0goCM3PbPAn9ozBz5vRzp5_gnXTZjr/pub?gid=0&single=true&output=csv";
+
+let lastState = "SAFE";
+
+async function fetchData() {
+  try {
+    const res = await fetch(url);
+    const data = await res.text();
+
+    const rows = data.trim().split("\n");
+    const lastRow = rows[rows.length - 1].split(",");
+
+    let s1 = lastRow[1];
+    let s2 = lastRow[2];
+    let s3 = lastRow[3];
+
+    let st1 = lastRow[4];
+    let st2 = lastRow[5];
+    let st3 = lastRow[6];
+
+    let sev1 = parseInt(lastRow[7]);
+    let sev2 = parseInt(lastRow[8]);
+    let sev3 = parseInt(lastRow[9]);
+
+    let maxSev = Math.max(sev1, sev2, sev3);
+
+    document.getElementById("s1").innerHTML = "Sensor 1: " + s1 + " (" + st1 + ")";
+    document.getElementById("s2").innerHTML = "Sensor 2: " + s2 + " (" + st2 + ")";
+    document.getElementById("s3").innerHTML = "Sensor 3: " + s3 + " (" + st3 + ")";
+
+    let status = document.getElementById("status");
+
+    if (maxSev === 0) {
+      document.body.style.background = "green";
+      status.innerHTML = "SAFE";
+
+      lastState = "SAFE";
+    }
+
+    else if (maxSev === 1) {
+      document.body.style.background = "yellow";
+      status.innerHTML = "WARNING";
+
+      if (lastState !== "WARNING") {
+        document.getElementById("warn").play();
+      }
+
+      lastState = "WARNING";
+    }
+
+    else {
+      document.body.style.background = "red";
+      status.innerHTML = "DANGER";
+
+      if (lastState !== "DANGER") {
+        document.getElementById("danger").play();
+      }
+
+      lastState = "DANGER";
+    }
+
+  } catch (e) {
+    document.getElementById("status").innerHTML = "ERROR LOADING DATA";
+  }
+}
+
+setInterval(fetchData, 5000);
+fetchData();
+
+</script>
+
+</body>
+</html>
