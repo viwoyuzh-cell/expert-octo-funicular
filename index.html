@@ -8,10 +8,18 @@
       font-family: Arial;
       text-align: center;
       transition: 0.5s;
+      margin: 0;
+      padding: 20px;
     }
 
     h1 {
       margin-top: 20px;
+    }
+
+    #status {
+      font-size: 40px;
+      font-weight: bold;
+      margin: 20px;
     }
 
     .box {
@@ -19,9 +27,12 @@
       margin: 10px;
     }
 
-    #status {
-      font-size: 30px;
-      font-weight: bold;
+    .card {
+      background: rgba(255,255,255,0.8);
+      padding: 15px;
+      margin: 10px auto;
+      width: 300px;
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -32,19 +43,38 @@
 
 <div id="status">Loading...</div>
 
-<div class="box" id="s1"></div>
-<div class="box" id="s2"></div>
-<div class="box" id="s3"></div>
+<div class="card">
+  <div class="box" id="s1"></div>
+  <div class="box" id="s2"></div>
+  <div class="box" id="s3"></div>
+</div>
 
+<div>Last update: <span id="time">-</span></div>
+
+<!-- SOUND FILES -->
 <audio id="warn" src="warning.mp3"></audio>
 <audio id="danger" src="danger.mp3"></audio>
 
 <script>
 
+// ================== GOOGLE SHEETS URL ==================
 const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQfZFMd4IOZupSSIwYXzV8_pfvW-yy-cBcSjnr5qJ8c91g6wC0goCM3PbPAn9ozBz5vRzp5_gnXTZjr/pub?gid=0&single=true&output=csv";
 
 let lastState = "SAFE";
 
+// ================== UNLOCK AUDIO (IMPORTANT FIX) ==================
+document.addEventListener("click", () => {
+  document.getElementById("warn").play().catch(()=>{});
+  document.getElementById("danger").play().catch(()=>{});
+});
+
+// ================== SAFE AUDIO PLAY FUNCTION ==================
+function playSafe(audio) {
+  audio.currentTime = 0;
+  audio.play().catch(err => console.log("Audio blocked:", err));
+}
+
+// ================== FETCH DATA ==================
 async function fetchData() {
   try {
     const res = await fetch(url);
@@ -67,12 +97,16 @@ async function fetchData() {
 
     let maxSev = Math.max(sev1, sev2, sev3);
 
+    // ================== UI UPDATE ==================
     document.getElementById("s1").innerHTML = "Sensor 1: " + s1 + " (" + st1 + ")";
     document.getElementById("s2").innerHTML = "Sensor 2: " + s2 + " (" + st2 + ")";
     document.getElementById("s3").innerHTML = "Sensor 3: " + s3 + " (" + st3 + ")";
 
+    document.getElementById("time").innerHTML = new Date().toLocaleTimeString();
+
     let status = document.getElementById("status");
 
+    // ================== STATUS LOGIC ==================
     if (maxSev === 0) {
       document.body.style.background = "green";
       status.innerHTML = "SAFE";
@@ -85,7 +119,7 @@ async function fetchData() {
       status.innerHTML = "WARNING";
 
       if (lastState !== "WARNING") {
-        document.getElementById("warn").play();
+        playSafe(document.getElementById("warn"));
       }
 
       lastState = "WARNING";
@@ -96,7 +130,7 @@ async function fetchData() {
       status.innerHTML = "DANGER";
 
       if (lastState !== "DANGER") {
-        document.getElementById("danger").play();
+        playSafe(document.getElementById("danger"));
       }
 
       lastState = "DANGER";
@@ -104,9 +138,11 @@ async function fetchData() {
 
   } catch (e) {
     document.getElementById("status").innerHTML = "ERROR LOADING DATA";
+    console.log(e);
   }
 }
 
+// ================== AUTO REFRESH ==================
 setInterval(fetchData, 5000);
 fetchData();
 
